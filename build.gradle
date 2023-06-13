@@ -1,0 +1,60 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'net.serenity-bdd.aggregator'
+//Para crear reportes
+
+group = 'com.saucedemo'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+//Para poder hacer uso de caracteres especiales como tildes
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+//Configuracion de Propiedades
+ext {
+    serenityVersion = '3.7.1'
+    junitVersion = '5.8.1'
+    slf4jVersion = '2.0.7' //para manejar los logs anivel de consola
+}
+
+//Es la forma en la que va compilar Gradle
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        configurations.all {
+            exclude group: 'org.codehaus.groovy', module: 'groovy'//Excluir el reporte que genera grrove
+        }
+        //Variables Nativas
+        classpath "net.serenity-bdd:serenity-gradle-plugin:2.4.34"
+        classpath "net.serenity-bdd:serenity-single-page-report:3.6.22"//Reportes Buscar como Sereniyu single page
+    }
+
+}
+serenity {
+    reports = ["single-page-html"]
+}
+
+dependencies {
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+
+    implementation group: 'net.serenity-bdd', name: 'serenity-core', version: "${serenityVersion}" //Para Interaccion con los Tags de Serenity
+    implementation group: 'net.serenity-bdd', name: 'serenity-junit', version: "${serenityVersion}"//Para generar los Runners por medio de Junit y Serenity
+    testImplementation group: 'net.serenity-bdd', name: 'serenity-cucumber', version: "${serenityVersion}"//Cucumber para que nos reconozca que estamos trabajando con Gherkin
+    implementation group: 'net.serenity-bdd', name: 'serenity-screenplay', version: "${serenityVersion}" //Para optimizar el patron de diseño
+    implementation group: 'net.serenity-bdd', name: 'serenity-screenplay-webdriver', version: "${serenityVersion}"//Opcional, trae un webdriver incluiudo en la libreria
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: "${slf4jVersion}"//Para Generar los Logs en la Terminal
+}
+
+test {
+    useJUnitPlatform()
+}
+//Extension para que a pesar que la prueba falle, siga generando el reporte
+gradle.startParameter.continueOnFailure = true
+test.finalizedBy(aggregate, reports)
